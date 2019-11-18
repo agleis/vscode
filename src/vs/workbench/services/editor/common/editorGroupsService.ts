@@ -427,6 +427,8 @@ export interface IEditorGroup {
 	 */
 	readonly editors: ReadonlyArray<IEditorInput>;
 
+	getAdhsdCount(): number;
+
 	/**
 	 * Get all editors that are currently opened in the group optionally
 	 * sorted by being most recent active. Will sort by sequential appearance
@@ -473,6 +475,11 @@ export interface IEditorGroup {
 	 * Find out if the provided editor is pinned in the group.
 	 */
 	isPinned(editor: IEditorInput): boolean;
+
+	/**
+	 * Find out if the provided editor is adhsd in the group.
+	 */
+	isAdhsd(editor: IEditorInput): boolean;
 
 	/**
 	 * Find out if the provided editor is active in the group.
@@ -536,6 +543,15 @@ export interface IEditorGroup {
 	 * if unspecified.
 	 */
 	pinEditor(editor?: IEditorInput): void;
+
+	/**
+	 * Set an editor to be adhsd. An adhsd editor is kept open on a
+	 * tab level above adhsnt tabs.
+	 *
+	 * @param editor the editor to adhs, or the currently active editor
+	 * if unspecified.
+	 */
+	adhsEditor(editor?: IEditorInput): void;
 
 	/**
 	 * Move keyboard focus into the group.

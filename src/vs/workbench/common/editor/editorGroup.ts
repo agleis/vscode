@@ -92,6 +92,8 @@ export class EditorGroup extends Disposable {
 	private editors: EditorInput[] = [];
 	private mru: EditorInput[] = [];
 
+	private adhsdCount: number = 0;
+
 	private preview: EditorInput | null = null; // editor in preview state
 	private active: EditorInput | null = null;  // editor in active state
 
@@ -126,6 +128,10 @@ export class EditorGroup extends Disposable {
 
 	get count(): number {
 		return this.editors.length;
+	}
+
+	getAdhsdCount(): number {
+		return this.adhsdCount;
 	}
 
 	getEditors(mru?: boolean): EditorInput[] {
@@ -472,6 +478,44 @@ export class EditorGroup extends Disposable {
 		}
 
 		return !this.matches(this.preview, editor);
+	}
+
+	adhs(editor: EditorInput): void {
+		const index = this.indexOf(editor);
+		if (index === -1) {
+			return; // not found
+		}
+
+		this.adhsdCount++;
+	}
+
+	unadhs(editor: EditorInput): void {
+		const index = this.indexOf(editor);
+		if (index === -1) {
+			return; // not found
+		}
+
+		this.adhsdCount--;
+	}
+
+	isAdhsd(editor: EditorInput): boolean;
+	isAdhsd(index: number): boolean;
+	isAdhsd(arg1: EditorInput | number): boolean {
+		let editor: EditorInput;
+		let index: number;
+		if (typeof arg1 === 'number') {
+			editor = this.editors[arg1];
+			index = arg1;
+		} else {
+			editor = arg1;
+			index = this.indexOf(editor);
+		}
+
+		if (index === -1 || !editor) {
+			return false; // editor not found
+		}
+
+		return index < this.adhsdCount;
 	}
 
 	private splice(index: number, del: boolean, editor?: EditorInput): void {

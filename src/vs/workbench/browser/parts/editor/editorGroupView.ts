@@ -744,8 +744,17 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 		return this._group.previewEditor;
 	}
 
+
+	getAdhsdCount(): number {
+		return this._group.getAdhsdCount();
+	}
+
 	isPinned(editor: EditorInput): boolean {
 		return this._group.isPinned(editor);
+	}
+
+	isAdhsd(editor: EditorInput): boolean {
+		return this._group.isAdhsd(editor);
 	}
 
 	isActive(editor: EditorInput): boolean {
@@ -793,6 +802,15 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 
 			// Forward to title control
 			this.titleAreaControl.pinEditor(editor);
+		}
+	}
+
+	adhsEditor(editor: EditorInput | undefined = this.activeEditor || undefined): void {
+		if (editor && !this._group.isAdhsd(editor)) {
+			// Move editor to end of adhsd list
+			this.moveEditor(editor, this, { index: this.getAdhsdCount() });
+			// Update adhsd count
+			this._group.adhs(editor);
 		}
 	}
 

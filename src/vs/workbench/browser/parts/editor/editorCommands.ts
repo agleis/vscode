@@ -663,7 +663,13 @@ function registerCloseEditorCommands() {
 		when: undefined,
 		primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KEY_K, KeyCode.KEY_A),
 		handler: (accessor, resourceOrContext: URI | IEditorCommandsContext, context?: IEditorCommandsContext) => {
-			//TODO Implement me
+			const editorGroupService = accessor.get(IEditorGroupsService);
+
+			const { group, editor } = resolveCommandsContext(editorGroupService, getCommandsContext(resourceOrContext, context));
+			if (group && editor) {
+				return group.adhsEditor(editor);
+			}
+
 			return Promise.resolve(false);
 		}
 	});
