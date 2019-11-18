@@ -26,6 +26,7 @@ export const ActiveEditorContext = new RawContextKey<string | null>('activeEdito
 export const ActiveEditorIsSaveableContext = new RawContextKey<boolean>('activeEditorIsSaveable', false);
 export const EditorsVisibleContext = new RawContextKey<boolean>('editorIsOpen', false);
 export const EditorPinnedContext = new RawContextKey<boolean>('editorPinned', false);
+export const EditorAdhsdContext = new RawContextKey<boolean>('editorAdhsd', false);
 export const EditorGroupActiveEditorDirtyContext = new RawContextKey<boolean>('groupActiveEditorDirty', false);
 export const EditorGroupEditorsCountContext = new RawContextKey<number>('groupEditorsCount', 0);
 export const NoEditorsVisibleContext: ContextKeyExpr = EditorsVisibleContext.toNegated();
