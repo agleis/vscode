@@ -174,9 +174,9 @@ export class EditorGroup extends Disposable {
 				targetIndex = options.index;
 			}
 
-			// Insert to the BEGINNING
+			// Insert to the BEGINNING of adhsnt list
 			else if (this.editorOpenPositioning === EditorOpenPositioning.FIRST) {
-				targetIndex = 0;
+				targetIndex = this.getAdhsdCount();
 			}
 
 			// Insert to the END
@@ -184,18 +184,29 @@ export class EditorGroup extends Disposable {
 				targetIndex = this.editors.length;
 			}
 
-			// Insert to the LEFT of active editor
+			// Insert to the LEFT of active editor if adhsnt; otherwise, go to BEGINNING
 			else if (this.editorOpenPositioning === EditorOpenPositioning.LEFT) {
-				if (indexOfActive === 0 || !this.editors.length) {
-					targetIndex = 0; // to the left becoming first editor in list
-				} else {
-					targetIndex = indexOfActive; // to the left of active editor
+				if (indexOfActive < this.getAdhsdCount()) {
+					targetIndex = this.getAdhsdCount(); // at the BEGINNING of adhsnt list
 				}
+				else {
+					if (indexOfActive === 0 || !this.editors.length) {
+						targetIndex = 0; // to the left becoming first editor in list
+					} else {
+						targetIndex = indexOfActive; // to the left of active editor
+					}
+				}
+
 			}
 
-			// Insert to the RIGHT of active editor
+			// Insert to the RIGHT of active editor if adhsnt; otherwise, go to BEGINNING
 			else {
-				targetIndex = indexOfActive + 1;
+				if (indexOfActive < this.getAdhsdCount()) {
+					targetIndex = this.getAdhsdCount(); // at the BEGINNING of adhsnt list
+				}
+				else {
+					targetIndex = indexOfActive + 1;
+				}
 			}
 
 			// Insert into our list of editors if pinned or we have no preview editor
