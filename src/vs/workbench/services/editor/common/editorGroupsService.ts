@@ -554,6 +554,14 @@ export interface IEditorGroup {
 	adhsEditor(editor?: IEditorInput): void;
 
 	/**
+	 * Set an editor to be adhsnt.
+	 *
+	 * @param editor the editor to unadhs, or the currently active editor
+	 * if unspecified.
+	 */
+	unadhsEditor(editor?: IEditorInput): void;
+
+	/**
 	 * Move keyboard focus into the group.
 	 */
 	focus(): void;
