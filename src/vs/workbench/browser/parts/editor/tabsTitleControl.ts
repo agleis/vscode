@@ -1146,6 +1146,15 @@ export class TabsTitleControl extends TitleControl {
 
 					// Move editor to target position and index
 					if (this.isMoveOperation(e, draggedEditor.groupId)) {
+						// Make sure to unadhs if it is adhsd
+						if (sourceGroup.editors.indexOf(draggedEditor.editor) < sourceGroup.getAdhsdCount()) {
+							sourceGroup.group.unadhs();
+						}
+						// Adhs if dragging strictly into the adhsd list
+						// (so dragging to the end of the adhsd list will result in an unadhsd editor)
+						if (targetIndex < this.group.getAdhsdCount()) {
+							this.group.group.adhs();
+						}
 						sourceGroup.moveEditor(draggedEditor.editor, this.group, { index: targetIndex });
 					}
 
