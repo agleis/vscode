@@ -495,6 +495,10 @@ export class EditorGroup extends Disposable {
 		this.adhsdCount++;
 	}
 
+	adhsMultiple(adhsdAdditional: number): void {
+		this.adhsdCount += adhsdAdditional;
+	}
+
 	unadhs(): void {
 		this.adhsdCount--;
 	}

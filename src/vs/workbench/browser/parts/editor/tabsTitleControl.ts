@@ -1181,6 +1181,10 @@ export class TabsTitleControl extends TitleControl {
 						mergeGroupOptions.mode = MergeGroupMode.COPY_EDITORS;
 					}
 
+					if (targetIndex < this.group.getAdhsdCount()) {
+						this.group.group.adhsMultiple(sourceGroup.count);
+					}
+
 					this.accessor.mergeGroup(sourceGroup, this.group, mergeGroupOptions);
 				}
 
