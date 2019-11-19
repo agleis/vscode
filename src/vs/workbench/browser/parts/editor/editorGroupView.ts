@@ -1158,6 +1158,11 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 
 	private doCloseEditor(editor: EditorInput, focusNext = (this.accessor.activeGroup === this), fromError?: boolean): void {
 
+		// Closing an adhsd editor should lower the adhsd count.
+		if (this.editors.indexOf(editor) < this.getAdhsdCount()) {
+			this._group.unadhs();
+		}
+
 		// Closing the active editor of the group is a bit more work
 		if (this._group.isActive(editor)) {
 			this.doCloseActiveEditor(focusNext, fromError);
@@ -1418,6 +1423,9 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 		// Close all inactive editors first
 		let closeActiveEditor = false;
 		editors.forEach(editor => {
+			if (this.editors.indexOf(editor) < this.getAdhsdCount()) {
+				this._group.unadhs();
+			}
 			if (!this.isActive(editor)) {
 				this.doCloseInactiveEditor(editor);
 			} else {
