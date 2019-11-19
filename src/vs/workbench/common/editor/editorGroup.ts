@@ -491,21 +491,11 @@ export class EditorGroup extends Disposable {
 		return !this.matches(this.preview, editor);
 	}
 
-	adhs(editor: EditorInput): void {
-		const index = this.indexOf(editor);
-		if (index === -1) {
-			return; // not found
-		}
-
+	adhs(): void {
 		this.adhsdCount++;
 	}
 
-	unadhs(editor: EditorInput): void {
-		const index = this.indexOf(editor);
-		if (index === -1) {
-			return; // not found
-		}
-
+	unadhs(): void {
 		this.adhsdCount--;
 	}
 

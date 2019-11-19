@@ -810,14 +810,14 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 			// Move editor to end of adhsd list
 			this.moveEditor(editor, this, { index: this.getAdhsdCount() });
 			// Update adhsd count
-			this._group.adhs(editor);
+			this._group.adhs();
 		}
 	}
 
 	unadhsEditor(editor: EditorInput | undefined = this.activeEditor || undefined): void {
 		if (editor && this._group.isAdhsd(editor)) {
 			// Update adhsd count
-			this._group.unadhs(editor);
+			this._group.unadhs();
 			// Move editor after adhsd list.
 			this.moveEditor(editor, this, { index: this.getAdhsdCount() });
 		}
