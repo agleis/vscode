@@ -32,7 +32,7 @@ import { DraggedEditorGroupIdentifier, DraggedEditorIdentifier, fillResourceData
 import { BaseEditor } from 'vs/workbench/browser/parts/editor/baseEditor';
 import { BreadcrumbsConfig } from 'vs/workbench/browser/parts/editor/breadcrumbs';
 import { BreadcrumbsControl, IBreadcrumbsControlOptions } from 'vs/workbench/browser/parts/editor/breadcrumbsControl';
-import { EDITOR_TITLE_HEIGHT, IEditorGroupsAccessor, IEditorGroupView } from 'vs/workbench/browser/parts/editor/editor';
+import { IEditorGroupsAccessor, IEditorGroupView, EDITOR_TITLE_HEIGHT_TWO_ROWS, EDITOR_TITLE_HEIGHT_ONE_ROW } from 'vs/workbench/browser/parts/editor/editor';
 import { EditorCommandsContextActionRunner, IEditorCommandsContext, IEditorInput, toResource, IEditorPartOptions, SideBySideEditor, EditorPinnedContext, EditorAdhsdContext } from 'vs/workbench/common/editor';
 import { ResourceContextKey } from 'vs/workbench/common/resources';
 import { Themable } from 'vs/workbench/common/theme';
@@ -365,6 +365,10 @@ export abstract class TitleControl extends Themable {
 
 	abstract pinEditor(editor: IEditorInput): void;
 
+	abstract adhsEditor(editor: IEditorInput): void;
+
+	abstract unadhsEditor(editor: IEditorInput): void;
+
 	abstract setActive(isActive: boolean): void;
 
 	abstract updateEditorLabel(editor: IEditorInput): void;
@@ -383,8 +387,9 @@ export abstract class TitleControl extends Themable {
 		}
 	}
 
-	getPreferredHeight(): number {
-		return EDITOR_TITLE_HEIGHT + (this.breadcrumbsControl && !this.breadcrumbsControl.isHidden() ? BreadcrumbsControl.HEIGHT : 0);
+	getPreferredHeight(hasAdhsdAndAdhsnt: boolean): number {
+		const editorTitleHeight = hasAdhsdAndAdhsnt ? EDITOR_TITLE_HEIGHT_TWO_ROWS : EDITOR_TITLE_HEIGHT_ONE_ROW;
+		return editorTitleHeight + (this.breadcrumbsControl && !this.breadcrumbsControl.isHidden() ? BreadcrumbsControl.HEIGHT : 0);
 	}
 
 	dispose(): void {

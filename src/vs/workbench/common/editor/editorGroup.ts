@@ -491,15 +491,15 @@ export class EditorGroup extends Disposable {
 		return !this.matches(this.preview, editor);
 	}
 
-	adhs(): void {
+	incrementAdhsdCount(): void {
 		this.adhsdCount++;
 	}
 
-	adhsMultiple(adhsdAdditional: number): void {
+	incrementAdhsdCountBy(adhsdAdditional: number): void {
 		this.adhsdCount += adhsdAdditional;
 	}
 
-	unadhs(): void {
+	decrementAdhsdCount(): void {
 		this.adhsdCount--;
 	}
 

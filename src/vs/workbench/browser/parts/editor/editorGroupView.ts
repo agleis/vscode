@@ -809,17 +809,17 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 		if (editor && !this._group.isAdhsd(editor)) {
 			// Move editor to end of adhsd list
 			this.moveEditor(editor, this, { index: this.getAdhsdCount() });
-			// Update adhsd count
-			this._group.adhs();
+			// Reparent adhsd tab.
+			this.titleAreaControl.adhsEditor(editor);
 		}
 	}
 
 	unadhsEditor(editor: EditorInput | undefined = this.activeEditor || undefined): void {
 		if (editor && this._group.isAdhsd(editor)) {
-			// Update adhsd count
-			this._group.unadhs();
 			// Move editor after adhsd list.
-			this.moveEditor(editor, this, { index: this.getAdhsdCount() });
+			this.moveEditor(editor, this, { index: this.getAdhsdCount() - 1 });
+			// Reparent unadhsd tab.
+			this.titleAreaControl.unadhsEditor(editor);
 		}
 	}
 
@@ -1160,7 +1160,7 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 
 		// Closing an adhsd editor should lower the adhsd count.
 		if (this.editors.indexOf(editor) < this.getAdhsdCount()) {
-			this._group.unadhs();
+			this._group.decrementAdhsdCount();
 		}
 
 		// Closing the active editor of the group is a bit more work
@@ -1424,7 +1424,7 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 		let closeActiveEditor = false;
 		editors.forEach(editor => {
 			if (this.editors.indexOf(editor) < this.getAdhsdCount()) {
-				this._group.unadhs();
+				this._group.decrementAdhsdCount();
 			}
 			if (!this.isActive(editor)) {
 				this.doCloseInactiveEditor(editor);
@@ -1603,17 +1603,20 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 	layout(width: number, height: number): void {
 		this.dimension = new Dimension(width, height);
 
+		// Use this to determine whether to show two rows in the title bar or just one.
+		const hasAdhsdAndAdhsnt = this.getAdhsdCount() > 0 && this.getAdhsdCount() < this.editors.length;
+
 		// Ensure editor container gets height as CSS depending
 		// on the preferred height of the title control
-		this.editorContainer.style.height = `calc(100% - ${this.titleAreaControl.getPreferredHeight()}px)`;
+		this.editorContainer.style.height = `calc(100% - ${this.titleAreaControl.getPreferredHeight(hasAdhsdAndAdhsnt)}px)`;
 
 		// Forward to controls
-		this.layoutTitleAreaControl(width);
-		this.editorControl.layout(new Dimension(this.dimension.width, this.dimension.height - this.titleAreaControl.getPreferredHeight()));
+		this.layoutTitleAreaControl(width, hasAdhsdAndAdhsnt);
+		this.editorControl.layout(new Dimension(this.dimension.width, this.dimension.height - this.titleAreaControl.getPreferredHeight(hasAdhsdAndAdhsnt)));
 	}
 
-	private layoutTitleAreaControl(width: number): void {
-		this.titleAreaControl.layout(new Dimension(width, this.titleAreaControl.getPreferredHeight()));
+	private layoutTitleAreaControl(width: number, hasAdhsdAndAdhsnt: boolean): void {
+		this.titleAreaControl.layout(new Dimension(width, this.titleAreaControl.getPreferredHeight(hasAdhsdAndAdhsnt)));
 	}
 
 	relayout(): void {

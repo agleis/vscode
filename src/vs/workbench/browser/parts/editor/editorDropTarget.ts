@@ -275,7 +275,7 @@ class DropOverlay extends Themable {
 					if (!copyEditor) {
 						// Unadhs if necessary
 						if (sourceGroup.editors.indexOf(draggedEditor.editor) < sourceGroup.getAdhsdCount()) {
-							sourceGroup.group.unadhs();
+							sourceGroup.group.decrementAdhsdCount();
 						}
 						sourceGroup.closeEditor(draggedEditor.editor);
 					}

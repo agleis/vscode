@@ -54,7 +54,8 @@ type AugmentedLabel = IEditorInputLabel & { editor: IEditorInput };
 export class TabsTitleControl extends TitleControl {
 
 	private titleContainer: HTMLElement | undefined;
-	private tabsContainer: HTMLElement | undefined;
+	private adhsdContainer: HTMLDivElement | undefined;
+	private adhsntContainer: HTMLDivElement | undefined;
 	private editorToolbarContainer: HTMLElement | undefined;
 	private tabsScrollbar: ScrollableElement | undefined;
 
@@ -101,18 +102,32 @@ export class TabsTitleControl extends TitleControl {
 		addClass(tabsAndActionsContainer, 'tabs-and-actions-container');
 		this.titleContainer.appendChild(tabsAndActionsContainer);
 
-		// Tabs Container
-		this.tabsContainer = document.createElement('div');
-		this.tabsContainer.setAttribute('role', 'tablist');
-		this.tabsContainer.draggable = true;
-		addClass(this.tabsContainer, 'tabs-container');
+		// Container for the two tabs containers
+		const tabsContainer = document.createElement('div');
+		tabsContainer.setAttribute('role', 'tablist');
+		tabsContainer.draggable = true;
+		addClass(tabsContainer, 'tabs-container');
+
+		// container for adhsd tabs
+		this.adhsdContainer = document.createElement('div');
+		this.adhsdContainer.setAttribute('role', 'tablist');
+		this.adhsdContainer.draggable = true;
+		addClass(this.adhsdContainer, 'adhsd-container');
+		tabsContainer.appendChild(this.adhsdContainer);
+
+		// container for adhsnt tabs
+		this.adhsntContainer = document.createElement('div');
+		this.adhsdContainer.setAttribute('role', 'tablist');
+		this.adhsntContainer.draggable = true;
+		addClass(this.adhsntContainer, 'adhsnt-container');
+		tabsContainer.appendChild(this.adhsntContainer);
 
 		// Tabs Scrollbar
-		this.tabsScrollbar = this._register(this.createTabsScrollbar(this.tabsContainer));
+		this.tabsScrollbar = this._register(this.createTabsScrollbar(tabsContainer));
 		tabsAndActionsContainer.appendChild(this.tabsScrollbar.getDomNode());
 
 		// Tabs Container listeners
-		this.registerTabsContainerListeners(this.tabsContainer, this.tabsScrollbar);
+		this.registerTabsContainerListeners(tabsContainer, this.tabsScrollbar);
 
 		// Editor Toolbar Container
 		this.editorToolbarContainer = document.createElement('div');
@@ -271,9 +286,11 @@ export class TabsTitleControl extends TitleControl {
 	openEditor(editor: IEditorInput): void {
 
 		// Create tabs as needed
-		const [tabsContainer, tabsScrollbar] = assertAllDefined(this.tabsContainer, this.tabsScrollbar);
-		for (let i = tabsContainer.children.length; i < this.group.count; i++) {
-			tabsContainer.appendChild(this.createTab(i, tabsContainer, tabsScrollbar));
+		// New tabs will always be adhsnt, so we only need to add to the adhsnt container.
+		const [adhsntContainer, adhsdContainer, tabsScrollbar] = assertAllDefined(this.adhsntContainer, this.adhsdContainer, this.tabsScrollbar);
+		const adhsdCount = adhsdContainer.children.length;
+		for (let i = adhsntContainer.children.length + adhsdCount; i < this.group.count; i++) {
+			adhsntContainer.appendChild(this.createTab(i, adhsntContainer, tabsScrollbar));
 		}
 
 		// An add of a tab requires to recompute all labels
@@ -304,14 +321,19 @@ export class TabsTitleControl extends TitleControl {
 		if (this.group.activeEditor) {
 
 			// Remove tabs that got closed
-			const tabsContainer = assertIsDefined(this.tabsContainer);
-			while (tabsContainer.children.length > this.group.count) {
+			for (let i = this.numTabs(); i > this.group.count; i--) {
 
 				// Remove one tab from container (must be the last to keep indexes in order!)
-				(tabsContainer.lastChild as HTMLElement).remove();
+				this.removeTabAtIndex(i - 1);
 
 				// Remove associated tab label and widget
 				dispose(this.tabDisposables.pop());
+			}
+
+			// Make sure only adhsd tabs are in the adhsd container
+			const adhsdContainer = assertIsDefined(this.adhsdContainer);
+			for (let i = adhsdContainer.children.length; i > this.group.getAdhsdCount(); i--) {
+				this.reparentAdhsdToAdhsnt(adhsdContainer.children[i - 1] as HTMLElement);
 			}
 
 			// A removal of a label requires to recompute all labels
@@ -323,8 +345,12 @@ export class TabsTitleControl extends TitleControl {
 
 		// No tabs to show
 		else {
-			if (this.tabsContainer) {
-				clearNode(this.tabsContainer);
+			if (this.adhsdContainer) {
+				clearNode(this.adhsdContainer);
+			}
+
+			if (this.adhsntContainer) {
+				clearNode(this.adhsntContainer);
 			}
 
 			this.tabDisposables = dispose(this.tabDisposables);
@@ -356,6 +382,24 @@ export class TabsTitleControl extends TitleControl {
 
 	pinEditor(editor: IEditorInput): void {
 		this.withTab(editor, (editor, index, tabContainer, tabLabelWidget, tabLabel) => this.redrawLabel(editor, tabContainer, tabLabelWidget, tabLabel));
+	}
+
+	adhsEditor(editor: IEditorInput): void {
+		this.withTab(editor, (editor, index, tabContainer, tabLabelWidget, tabLabel) => {
+			this.reparentAdhsntToAdhsd(tabContainer, index);
+		});
+
+		this.group.group.incrementAdhsdCount();
+		this.redraw();
+	}
+
+	unadhsEditor(editor: IEditorInput): void {
+		this.withTab(editor, (editor, index, tabContainer, tabLabelWidget, tabLabel) => {
+			this.reparentAdhsdToAdhsnt(tabContainer);
+		});
+
+		this.group.group.decrementAdhsdCount();
+		this.redraw();
 	}
 
 	setActive(isGroupActive: boolean): void {
@@ -429,8 +473,7 @@ export class TabsTitleControl extends TitleControl {
 	}
 
 	private doWithTab(index: number, editor: IEditorInput, fn: (editor: IEditorInput, index: number, tabContainer: HTMLElement, tabLabelWidget: IResourceLabel, tabLabel: IEditorInputLabel) => void): void {
-		const tabsContainer = assertIsDefined(this.tabsContainer);
-		const tabContainer = tabsContainer.children[index] as HTMLElement;
+		const tabContainer = assertIsDefined(this.getTabAtIndex(index));
 		const tabResourceLabel = this.tabResourceLabels.get(index);
 		const tabLabel = this.tabLabels[index];
 		if (tabContainer && tabResourceLabel && tabLabel) {
@@ -585,7 +628,8 @@ export class TabsTitleControl extends TitleControl {
 				if (target) {
 					handled = true;
 					this.group.openEditor(target, { preserveFocus: true });
-					(<HTMLElement>tabsContainer.childNodes[targetIndex]).focus();
+					const tab = assertIsDefined(this.getTabAtIndex(targetIndex));
+					tab.focus();
 				}
 			}
 
@@ -870,11 +914,23 @@ export class TabsTitleControl extends TitleControl {
 			this.redrawTab(editor, index, tabContainer, tabLabelWidget, tabLabel);
 		});
 
+		// Don't need to show the adhsd container if there are no tabs in it.
+		const adhsdContainer = assertIsDefined(this.adhsdContainer);
+		if (this.group.getAdhsdCount() === 0) {
+			adhsdContainer.style.display = 'none';
+		}
+		else {
+			adhsdContainer.style.display = 'flex';
+		}
+
 		// Update Editor Actions Toolbar
 		this.updateEditorActionsToolbar();
 
 		// Ensure the active tab is always revealed
 		this.layout(this.dimension);
+
+		// Ensure that the height updates based on the number of rows to be displayed.
+		this.group.relayout();
 	}
 
 	private redrawTab(editor: IEditorInput, index: number, tabContainer: HTMLElement, tabLabelWidget: IResourceLabel, tabLabel: IEditorInputLabel): void {
@@ -1047,15 +1103,15 @@ export class TabsTitleControl extends TitleControl {
 			return;
 		}
 
-		const [tabsContainer, tabsScrollbar] = assertAllDefined(this.tabsContainer, this.tabsScrollbar);
+		const [adhsdContainer, adhsntContainer, tabsScrollbar] = assertAllDefined(this.adhsdContainer, this.adhsntContainer, this.tabsScrollbar);
 
 		if (this.breadcrumbsControl && !this.breadcrumbsControl.isHidden()) {
 			this.breadcrumbsControl.layout({ width: dimension.width, height: BreadcrumbsControl.HEIGHT });
 			tabsScrollbar.getDomNode().style.height = `${dimension.height - BreadcrumbsControl.HEIGHT}px`;
 		}
 
-		const visibleContainerWidth = tabsContainer.offsetWidth;
-		const totalContainerWidth = tabsContainer.scrollWidth;
+		const visibleContainerWidth = Math.max(adhsntContainer.offsetWidth, adhsdContainer.offsetWidth);
+		const totalContainerWidth = Math.max(adhsntContainer.scrollWidth, adhsdContainer.scrollWidth);
 
 		let activeTabPosX: number | undefined;
 		let activeTabWidth: number | undefined;
@@ -1097,15 +1153,48 @@ export class TabsTitleControl extends TitleControl {
 		}
 	}
 
+	// Count of the total number of tabs (including adhsd and adhsnt).
+	private numTabs(): number {
+		const [adhsdContainer, adhsntContainer] = assertAllDefined(this.adhsdContainer, this.adhsntContainer);
+		return adhsdContainer.children.length + adhsntContainer.children.length;
+	}
+
 	private getTab(editor: IEditorInput): HTMLElement | undefined {
 		const editorIndex = this.group.getIndexOfEditor(editor);
 		if (editorIndex >= 0) {
-			const tabsContainer = assertIsDefined(this.tabsContainer);
-
-			return tabsContainer.children[editorIndex] as HTMLElement;
+			return this.getTabAtIndex(editorIndex);
 		}
 
 		return undefined;
+	}
+
+	private getTabAtIndex(index: number): HTMLElement {
+		const adhsdContainer = assertIsDefined(this.adhsdContainer);
+		if (index < adhsdContainer.children.length) {
+			return adhsdContainer.children[index] as HTMLElement;
+		}
+		else {
+			const adhsntContainer = assertIsDefined(this.adhsntContainer);
+			return adhsntContainer.children[index - adhsdContainer.children.length] as HTMLElement;
+		}
+	}
+
+	private removeTabAtIndex(index: number): void {
+		this.getTabAtIndex(index).remove();
+	}
+
+	// Reparents an adhsd tab to the beginning of the adhsnt list.
+	private reparentAdhsdToAdhsnt(tabContainer: HTMLElement): void {
+		const [adhsntContainer, adhsdContainer] = assertAllDefined(this.adhsntContainer, this.adhsdContainer);
+		adhsdContainer.removeChild(tabContainer);
+		adhsntContainer.insertBefore(tabContainer, adhsntContainer.children[0]);
+	}
+
+	// Reparents an adhsnt tab to a particular index in the adhsd list.
+	private reparentAdhsntToAdhsd(tabContainer: HTMLElement, index: number): void {
+		const [adhsntContainer, adhsdContainer] = assertAllDefined(this.adhsntContainer, this.adhsdContainer);
+		adhsntContainer.removeChild(tabContainer);
+		adhsdContainer.insertBefore(tabContainer, adhsdContainer.children[index]);
 	}
 
 	private blockRevealActiveTabOnce(): void {
@@ -1148,12 +1237,12 @@ export class TabsTitleControl extends TitleControl {
 					if (this.isMoveOperation(e, draggedEditor.groupId)) {
 						// Make sure to unadhs if it is adhsd
 						if (sourceGroup.editors.indexOf(draggedEditor.editor) < sourceGroup.getAdhsdCount()) {
-							sourceGroup.group.unadhs();
+							sourceGroup.group.decrementAdhsdCount();
 						}
 						// Adhs if dragging strictly into the adhsd list
 						// (so dragging to the end of the adhsd list will result in an unadhsd editor)
 						if (targetIndex < this.group.getAdhsdCount()) {
-							this.group.group.adhs();
+							this.group.group.incrementAdhsdCount();
 						}
 						sourceGroup.moveEditor(draggedEditor.editor, this.group, { index: targetIndex });
 					}
@@ -1182,7 +1271,7 @@ export class TabsTitleControl extends TitleControl {
 					}
 
 					if (targetIndex < this.group.getAdhsdCount()) {
-						this.group.group.adhsMultiple(sourceGroup.count);
+						this.group.group.incrementAdhsdCountBy(sourceGroup.count);
 					}
 
 					this.accessor.mergeGroup(sourceGroup, this.group, mergeGroupOptions);
@@ -1227,21 +1316,21 @@ registerThemingParticipant((theme: ITheme, collector: ICssStyleCollector) => {
 	const activeContrastBorderColor = theme.getColor(activeContrastBorder);
 	if (activeContrastBorderColor) {
 		collector.addRule(`
-			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active,
-			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active:hover  {
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab.active,
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab.active:hover  {
 				outline: 1px solid;
 				outline-offset: -5px;
 			}
 
-			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab:hover  {
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab:hover  {
 				outline: 1px dashed;
 				outline-offset: -5px;
 			}
 
-			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active > .tab-close .action-label,
-			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active:hover > .tab-close .action-label,
-			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.dirty > .tab-close .action-label,
-			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab:hover > .tab-close .action-label {
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab.active > .tab-close .action-label,
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab.active:hover > .tab-close .action-label,
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab.dirty > .tab-close .action-label,
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab:hover > .tab-close .action-label {
 				opacity: 1 !important;
 			}
 		`);
@@ -1261,7 +1350,7 @@ registerThemingParticipant((theme: ITheme, collector: ICssStyleCollector) => {
 	const tabHoverBackground = theme.getColor(TAB_HOVER_BACKGROUND);
 	if (tabHoverBackground) {
 		collector.addRule(`
-			.monaco-workbench .part.editor > .content .editor-group-container.active > .title .tabs-container > .tab:hover  {
+			.monaco-workbench .part.editor > .content .editor-group-container.active > .title .tabs-container .tab:hover  {
 				background-color: ${tabHoverBackground} !important;
 			}
 		`);
@@ -1270,7 +1359,7 @@ registerThemingParticipant((theme: ITheme, collector: ICssStyleCollector) => {
 	const tabUnfocusedHoverBackground = theme.getColor(TAB_UNFOCUSED_HOVER_BACKGROUND);
 	if (tabUnfocusedHoverBackground) {
 		collector.addRule(`
-			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab:hover  {
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab:hover  {
 				background-color: ${tabUnfocusedHoverBackground} !important;
 			}
 		`);
@@ -1280,7 +1369,7 @@ registerThemingParticipant((theme: ITheme, collector: ICssStyleCollector) => {
 	const tabHoverBorder = theme.getColor(TAB_HOVER_BORDER);
 	if (tabHoverBorder) {
 		collector.addRule(`
-			.monaco-workbench .part.editor > .content .editor-group-container.active > .title .tabs-container > .tab:hover  {
+			.monaco-workbench .part.editor > .content .editor-group-container.active > .title .tabs-container .tab:hover  {
 				box-shadow: ${tabHoverBorder} 0 -1px inset !important;
 			}
 		`);
@@ -1289,7 +1378,7 @@ registerThemingParticipant((theme: ITheme, collector: ICssStyleCollector) => {
 	const tabUnfocusedHoverBorder = theme.getColor(TAB_UNFOCUSED_HOVER_BORDER);
 	if (tabUnfocusedHoverBorder) {
 		collector.addRule(`
-			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab:hover  {
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab:hover  {
 				box-shadow: ${tabUnfocusedHoverBorder} 0 -1px inset !important;
 			}
 		`);
@@ -1314,11 +1403,11 @@ registerThemingParticipant((theme: ITheme, collector: ICssStyleCollector) => {
 
 		// Adjust gradient for focused and unfocused hover background
 		const makeTabHoverBackgroundRule = (color: Color, colorDrag: Color, hasFocus = false) => `
-				.monaco-workbench .part.editor > .content:not(.dragged-over) .editor-group-container${hasFocus ? '.active' : ''} > .title .tabs-container > .tab.sizing-shrink:not(.dragged):hover > .tab-label::after {
+				.monaco-workbench .part.editor > .content:not(.dragged-over) .editor-group-container${hasFocus ? '.active' : ''} > .title .tabs-container .tab.sizing-shrink:not(.dragged):hover > .tab-label::after {
 					background: linear-gradient(to left, ${color}, transparent) !important;
 				}
 
-				.monaco-workbench .part.editor > .content.dragged-over .editor-group-container${hasFocus ? '.active' : ''} > .title .tabs-container > .tab.sizing-shrink:not(.dragged):hover > .tab-label::after {
+				.monaco-workbench .part.editor > .content.dragged-over .editor-group-container${hasFocus ? '.active' : ''} > .title .tabs-container .tab.sizing-shrink:not(.dragged):hover > .tab-label::after {
 					background: linear-gradient(to left, ${colorDrag}, transparent) !important;
 				}
 		`;
@@ -1341,8 +1430,8 @@ registerThemingParticipant((theme: ITheme, collector: ICssStyleCollector) => {
 		if (editorDragAndDropBackground && adjustedTabDragBackground) {
 			const adjustedColorDrag = editorDragAndDropBackground.flatten(adjustedTabDragBackground);
 			collector.addRule(`
-			.monaco-workbench .part.editor > .content.dragged-over .editor-group-container.active > .title .tabs-container > .tab.sizing-shrink.dragged-over:not(.active):not(.dragged) > .tab-label::after,
-			.monaco-workbench .part.editor > .content.dragged-over .editor-group-container:not(.active) > .title .tabs-container > .tab.sizing-shrink.dragged-over:not(.dragged) > .tab-label::after {
+			.monaco-workbench .part.editor > .content.dragged-over .editor-group-container.active > .title .tabs-container .tab.sizing-shrink.dragged-over:not(.active):not(.dragged) > .tab-label::after,
+			.monaco-workbench .part.editor > .content.dragged-over .editor-group-container:not(.active) > .title .tabs-container .tab.sizing-shrink.dragged-over:not(.dragged) > .tab-label::after {
 				background: linear-gradient(to left, ${adjustedColorDrag}, transparent) !important;
 			}
 		`);
@@ -1350,11 +1439,11 @@ registerThemingParticipant((theme: ITheme, collector: ICssStyleCollector) => {
 
 		// Adjust gradient for active tab background (focused and unfocused editor groups)
 		const makeTabActiveBackgroundRule = (color: Color, colorDrag: Color, hasFocus = false) => `
-				.monaco-workbench .part.editor > .content:not(.dragged-over) .editor-group-container${hasFocus ? '.active' : ':not(.active)'} > .title .tabs-container > .tab.sizing-shrink.active:not(.dragged) > .tab-label::after {
+				.monaco-workbench .part.editor > .content:not(.dragged-over) .editor-group-container${hasFocus ? '.active' : ':not(.active)'} > .title .tabs-container .tab.sizing-shrink.active:not(.dragged) > .tab-label::after {
 					background: linear-gradient(to left, ${color}, transparent);
 				}
 
-				.monaco-workbench .part.editor > .content.dragged-over .editor-group-container${hasFocus ? '.active' : ':not(.active)'} > .title .tabs-container > .tab.sizing-shrink.active:not(.dragged) > .tab-label::after {
+				.monaco-workbench .part.editor > .content.dragged-over .editor-group-container${hasFocus ? '.active' : ':not(.active)'} > .title .tabs-container .tab.sizing-shrink.active:not(.dragged) > .tab-label::after {
 					background: linear-gradient(to left, ${colorDrag}, transparent);
 				}
 		`;
@@ -1381,11 +1470,11 @@ registerThemingParticipant((theme: ITheme, collector: ICssStyleCollector) => {
 			const adjustedColor = tabInactiveBackground.flatten(adjustedTabBackground);
 			const adjustedColorDrag = tabInactiveBackground.flatten(adjustedTabDragBackground);
 			collector.addRule(`
-			.monaco-workbench .part.editor > .content:not(.dragged-over) .editor-group-container > .title .tabs-container > .tab.sizing-shrink:not(.dragged) > .tab-label::after {
+			.monaco-workbench .part.editor > .content:not(.dragged-over) .editor-group-container > .title .tabs-container .tab.sizing-shrink:not(.dragged) > .tab-label::after {
 				background: linear-gradient(to left, ${adjustedColor}, transparent);
 			}
 
-			.monaco-workbench .part.editor > .content.dragged-over .editor-group-container > .title .tabs-container > .tab.sizing-shrink:not(.dragged) > .tab-label::after {
+			.monaco-workbench .part.editor > .content.dragged-over .editor-group-container > .title .tabs-container .tab.sizing-shrink:not(.dragged) > .tab-label::after {
 				background: linear-gradient(to left, ${adjustedColorDrag}, transparent);
 			}
 		`);
