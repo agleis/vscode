@@ -1236,15 +1236,27 @@ export class TabsTitleControl extends TitleControl {
 					// Move editor to target position and index
 					if (this.isMoveOperation(e, draggedEditor.groupId)) {
 						// Make sure to unadhs if it is adhsd
-						if (sourceGroup.editors.indexOf(draggedEditor.editor) < sourceGroup.getAdhsdCount()) {
+						if (this.isUnadhsOperation(sourceGroup, draggedEditor.editor, targetIndex)) {
 							sourceGroup.group.decrementAdhsdCount();
+							sourceGroup.moveEditor(draggedEditor.editor, this.group, { index: targetIndex - 1 });
+							const adhsdContainer = assertIsDefined(this.adhsdContainer);
+							this.reparentAdhsdToAdhsnt(adhsdContainer.lastChild as HTMLElement);
 						}
 						// Adhs if dragging strictly into the adhsd list
 						// (so dragging to the end of the adhsd list will result in an unadhsd editor)
-						if (targetIndex < this.group.getAdhsdCount()) {
+						else if (this.isAdhsOperation(sourceGroup, draggedEditor.editor, targetIndex)) {
 							this.group.group.incrementAdhsdCount();
+							sourceGroup.moveEditor(draggedEditor.editor, this.group, { index: targetIndex });
+							const [adhsdContainer, adhsntContainer] = assertAllDefined(this.adhsdContainer, this.adhsntContainer);
+							this.reparentAdhsntToAdhsd(adhsntContainer.children[0] as HTMLElement, adhsdContainer.children.length);
 						}
-						sourceGroup.moveEditor(draggedEditor.editor, this.group, { index: targetIndex });
+						else {
+							sourceGroup.moveEditor(draggedEditor.editor, this.group, { index: targetIndex });
+						}
+
+						// Need to redraw to change the number of rows displayed if necessary
+						this.redraw();
+						this.group.relayout();
 					}
 
 					// Copy editor to target position and index
@@ -1293,6 +1305,24 @@ export class TabsTitleControl extends TitleControl {
 		const isCopy = (e.ctrlKey && !isMacintosh) || (e.altKey && isMacintosh);
 
 		return !isCopy || source === this.group.id;
+	}
+
+	private isUnadhsOperation(sourceGroup: IEditorGroupView, editor: IEditorInput, targetIndex: number) {
+		// Moving groups - unadhs if editor was adhsd in sourceGroup
+		if (sourceGroup !== this.group) {
+			return sourceGroup.isAdhsd(editor);
+		}
+		// Moving within group - unadhs if editor was adhsd and targetIndex is in the adhsnt region.
+		return this.group.isAdhsd(editor) && targetIndex >= this.group.getAdhsdCount();
+	}
+
+	private isAdhsOperation(sourceGroup: IEditorGroupView, editor: IEditorInput, targetIndex: number) {
+		// Moving groups - adhs if targetIndex is in the adhsd region.
+		if (sourceGroup !== this.group) {
+			return targetIndex < this.group.getAdhsdCount();
+		}
+		// Moving within group - adhs if editor was unadhsd and targetIndex is in the adhsd region.
+		return !this.group.isAdhsd(editor) && targetIndex < this.group.getAdhsdCount();
 	}
 
 	dispose(): void {
