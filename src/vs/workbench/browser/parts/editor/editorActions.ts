@@ -522,6 +522,98 @@ export class CloseOneEditorAction extends Action {
 	}
 }
 
+export class AdhsEditorAction extends Action {
+
+	static readonly ID = 'workbench.action.AdhsActiveEditor';
+	static readonly LABEL = nls.localize('adhsEditor', "Adhs");
+
+	constructor(
+		id: string,
+		label: string,
+		@IEditorGroupsService private readonly editorGroupService: IEditorGroupsService
+	) {
+		super(id, label, 'codicon-adhs');
+	}
+
+	run(context?: IEditorCommandsContext): Promise<any> {
+		let group: IEditorGroup | undefined;
+		let editorIndex: number | undefined;
+		if (context) {
+			group = this.editorGroupService.getGroup(context.groupId);
+
+			if (group) {
+				editorIndex = context.editorIndex; // only allow editor at index if group is valid
+			}
+		}
+
+		if (!group) {
+			group = this.editorGroupService.activeGroup;
+		}
+
+		// adhs specific editor in group
+		if (typeof editorIndex === 'number') {
+			const editorAtIndex = group.getEditorByIndex(editorIndex);
+			if (editorAtIndex) {
+				group.adhsEditor(editorAtIndex);
+				return Promise.resolve(true);
+			}
+		}
+
+		// Otherwise adhs active editor in group
+		if (group.activeEditor) {
+			group.adhsEditor(group.activeEditor);
+		}
+
+		return Promise.resolve(false);
+	}
+}
+
+export class UnadhsEditorAction extends Action {
+
+	static readonly ID = 'workbench.action.UnadhsActiveEditor';
+	static readonly LABEL = nls.localize('unAdhsEditor', "Unadhs");
+
+	constructor(
+		id: string,
+		label: string,
+		@IEditorGroupsService private readonly editorGroupService: IEditorGroupsService
+	) {
+		super(id, label, 'codicon-unadhs');
+	}
+
+	run(context?: IEditorCommandsContext): Promise<any> {
+		let group: IEditorGroup | undefined;
+		let editorIndex: number | undefined;
+		if (context) {
+			group = this.editorGroupService.getGroup(context.groupId);
+
+			if (group) {
+				editorIndex = context.editorIndex; // only allow editor at index if group is valid
+			}
+		}
+
+		if (!group) {
+			group = this.editorGroupService.activeGroup;
+		}
+
+		// unadhs specific editor in group
+		if (typeof editorIndex === 'number') {
+			const editorAtIndex = group.getEditorByIndex(editorIndex);
+			if (editorAtIndex) {
+				group.unadhsEditor(editorAtIndex);
+				return Promise.resolve(true);
+			}
+		}
+
+		// Otherwise unadhs active editor in group
+		if (group.activeEditor) {
+			group.unadhsEditor(group.activeEditor);
+		}
+
+		return Promise.resolve(false);
+	}
+}
+
 export class RevertAndCloseEditorAction extends Action {
 
 	static readonly ID = 'workbench.action.revertAndCloseActiveEditor';
