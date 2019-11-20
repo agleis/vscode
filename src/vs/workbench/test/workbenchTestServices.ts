@@ -805,6 +805,10 @@ export class TestEditorGroup implements IEditorGroupView {
 	onDidFocus: Event<void> = Event.None;
 	onDidChange: Event<{ width: number; height: number; }> = Event.None;
 
+	getAdhsdCount() {
+		return 0;
+	}
+
 	getEditors(_order?: EditorsOrder): ReadonlyArray<IEditorInput> {
 		return [];
 	}
@@ -833,6 +837,10 @@ export class TestEditorGroup implements IEditorGroupView {
 		return false;
 	}
 
+	isAdhsd(_editor: IEditorInput): boolean {
+		return false;
+	}
+
 	isActive(_editor: IEditorInput): boolean {
 		return false;
 	}
@@ -858,6 +866,10 @@ export class TestEditorGroup implements IEditorGroupView {
 	}
 
 	pinEditor(_editor?: IEditorInput): void { }
+
+	adhsEditor(_editor?: IEditorInput): void { }
+
+	unadhsEditor(_editor?: IEditorInput): void { }
 
 	focus(): void { }
 

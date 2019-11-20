@@ -602,7 +602,8 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 			// Recreate and layout control
 			this.createTitleAreaControl();
 			if (this.dimension) {
-				this.layoutTitleAreaControl(this.dimension.width);
+				const hasAdhsdAndAdhsnt = this.getAdhsdCount() > 0 && this.getAdhsdCount() < this.editors.length;
+				this.layoutTitleAreaControl(this.dimension.width, hasAdhsdAndAdhsnt);
 			}
 
 			// Ensure to show active editor if any

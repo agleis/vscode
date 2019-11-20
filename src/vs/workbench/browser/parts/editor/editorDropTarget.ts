@@ -6,7 +6,7 @@
 import 'vs/css!./media/editordroptarget';
 import { LocalSelectionTransfer, DraggedEditorIdentifier, ResourcesDropHandler, DraggedEditorGroupIdentifier, DragAndDropObserver, containsDragType } from 'vs/workbench/browser/dnd';
 import { addDisposableListener, EventType, EventHelper, isAncestor, toggleClass, addClass, removeClass } from 'vs/base/browser/dom';
-import { IEditorGroupsAccessor, EDITOR_TITLE_HEIGHT, IEditorGroupView, getActiveTextEditorOptions } from 'vs/workbench/browser/parts/editor/editor';
+import { IEditorGroupsAccessor, EDITOR_TITLE_HEIGHT_ONE_ROW, EDITOR_TITLE_HEIGHT_TWO_ROWS, IEditorGroupView, getActiveTextEditorOptions } from 'vs/workbench/browser/parts/editor/editor';
 import { EDITOR_DRAG_AND_DROP_BACKGROUND, Themable } from 'vs/workbench/common/theme';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { activeContrastBorder } from 'vs/platform/theme/common/colorRegistry';
@@ -441,7 +441,7 @@ class DropOverlay extends Themable {
 
 	private getOverlayOffsetHeight(): number {
 		if (!this.groupView.isEmpty && this.accessor.partOptions.showTabs) {
-			return EDITOR_TITLE_HEIGHT; // show overlay below title if group shows tabs
+			return this.groupView.getAdhsdCount() > 0 && this.groupView.getAdhsdCount() < this.groupView.editors.length ? EDITOR_TITLE_HEIGHT_TWO_ROWS : EDITOR_TITLE_HEIGHT_ONE_ROW; // show overlay below title if group shows tabs
 		}
 
 		return 0;
