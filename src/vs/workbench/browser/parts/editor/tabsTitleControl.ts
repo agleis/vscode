@@ -1238,9 +1238,17 @@ export class TabsTitleControl extends TitleControl {
 						// Make sure to unadhs if it is adhsd
 						if (this.isUnadhsOperation(sourceGroup, draggedEditor.editor, targetIndex)) {
 							sourceGroup.group.decrementAdhsdCount();
-							sourceGroup.moveEditor(draggedEditor.editor, this.group, { index: targetIndex - 1 });
-							const adhsdContainer = assertIsDefined(this.adhsdContainer);
-							this.reparentAdhsdToAdhsnt(adhsdContainer.lastChild as HTMLElement);
+							sourceGroup.moveEditor(draggedEditor.editor, this.group, { index: this.group === sourceGroup ? targetIndex - 1 : targetIndex });
+							// Only need to reparent if moving within a group
+							if (this.group === sourceGroup) {
+								const adhsdContainer = assertIsDefined(this.adhsdContainer);
+								this.reparentAdhsdToAdhsnt(adhsdContainer.lastChild as HTMLElement);
+							}
+							// If we also need to adhs, just do the reparenting.
+							if (this.isAdhsOperation(sourceGroup, draggedEditor.editor, targetIndex)) {
+								const [adhsdContainer, adhsntContainer] = assertAllDefined(this.adhsdContainer, this.adhsntContainer);
+								this.reparentAdhsntToAdhsd(adhsntContainer.children[0] as HTMLElement, adhsdContainer.children.length);
+							}
 						}
 						// Adhs if dragging strictly into the adhsd list
 						// (so dragging to the end of the adhsd list will result in an unadhsd editor)
@@ -1256,7 +1264,6 @@ export class TabsTitleControl extends TitleControl {
 
 						// Need to redraw to change the number of rows displayed if necessary
 						this.redraw();
-						this.group.relayout();
 					}
 
 					// Copy editor to target position and index
