@@ -131,7 +131,8 @@ export class TabsTitleControl extends TitleControl {
 		tabsAndActionsContainer.appendChild(this.tabsScrollbar.getDomNode());
 
 		// Tabs Container listeners
-		this.registerTabsContainerListeners(tabsContainer, this.tabsScrollbar);
+		this.registerTabsContainerListeners(this.adhsdContainer, this.tabsScrollbar);
+		this.registerTabsContainerListeners(this.adhsntContainer, this.tabsScrollbar);
 
 		// Editor Toolbar Container
 		this.editorToolbarContainer = document.createElement('div');
@@ -273,7 +274,8 @@ export class TabsTitleControl extends TitleControl {
 				removeClass(tabsContainer, 'scroll');
 
 				if (e.target === tabsContainer) {
-					this.onDrop(e, this.group.count, tabsContainer);
+					const targetIndex = tabsContainer === this.adhsdContainer ? this.group.getAdhsdCount() : this.group.count;
+					this.onDrop(e, targetIndex, tabsContainer);
 				}
 			}
 		}));
@@ -1275,14 +1277,14 @@ export class TabsTitleControl extends TitleControl {
 								this.reparentAdhsdToAdhsnt(adhsdContainer.lastChild as HTMLElement);
 							}
 							// If we also need to adhs, just do the reparenting.
-							if (this.isAdhsOperation(sourceGroup, draggedEditor.editor, targetIndex)) {
+							if (this.isAdhsOperation(sourceGroup, draggedEditor.editor, targetIndex, tabsContainer)) {
 								const [adhsdContainer, adhsntContainer] = assertAllDefined(this.adhsdContainer, this.adhsntContainer);
 								this.reparentAdhsntToAdhsd(adhsntContainer.children[0] as HTMLElement, adhsdContainer.children.length);
 							}
 						}
 						// Adhs if dragging strictly into the adhsd list
 						// (so dragging to the end of the adhsd list will result in an unadhsd editor)
-						else if (this.isAdhsOperation(sourceGroup, draggedEditor.editor, targetIndex)) {
+						else if (this.isAdhsOperation(sourceGroup, draggedEditor.editor, targetIndex, tabsContainer)) {
 							this.group.group.incrementAdhsdCount();
 							sourceGroup.moveEditor(draggedEditor.editor, this.group, { index: targetIndex });
 							const [adhsdContainer, adhsntContainer] = assertAllDefined(this.adhsdContainer, this.adhsntContainer);
@@ -1353,7 +1355,12 @@ export class TabsTitleControl extends TitleControl {
 		return this.group.isAdhsd(editor) && targetIndex >= this.group.getAdhsdCount();
 	}
 
-	private isAdhsOperation(sourceGroup: IEditorGroupView, editor: IEditorInput, targetIndex: number) {
+	private isAdhsOperation(sourceGroup: IEditorGroupView, editor: IEditorInput, targetIndex: number, tabsContainer: HTMLElement) {
+		// Dropping directly into the adhsdContainer - check if index if <= adhsdCount
+		if (tabsContainer === this.adhsdContainer) {
+			return targetIndex <= this.group.getAdhsdCount();
+		}
+
 		// Moving groups - adhs if targetIndex is in the adhsd region.
 		if (sourceGroup !== this.group) {
 			return targetIndex < this.group.getAdhsdCount();

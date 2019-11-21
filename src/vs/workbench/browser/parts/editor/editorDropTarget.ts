@@ -273,13 +273,6 @@ class DropOverlay extends Themable {
 					// Close in source group unless we copy
 					const copyEditor = this.isCopyOperation(event, draggedEditor);
 					if (!copyEditor) {
-						// Unadhs if necessary
-						if (sourceGroup.editors.indexOf(draggedEditor.editor) < sourceGroup.getAdhsdCount()) {
-							sourceGroup.group.decrementAdhsdCount();
-						}
-						else if (targetGroup.editors.indexOf(draggedEditor.editor) < targetGroup.getAdhsdCount()) {
-							targetGroup.group.incrementAdhsdCount();
-						}
 						sourceGroup.closeEditor(draggedEditor.editor);
 					}
 				}
