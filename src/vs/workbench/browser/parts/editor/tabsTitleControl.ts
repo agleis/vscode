@@ -36,7 +36,7 @@ import { IUntitledTextEditorService } from 'vs/workbench/services/untitled/commo
 import { addClass, addDisposableListener, hasClass, EventType, EventHelper, removeClass, Dimension, scheduleAtNextAnimationFrame, findParentWithClass, clearNode } from 'vs/base/browser/dom';
 import { localize } from 'vs/nls';
 import { IEditorGroupsAccessor, IEditorGroupView } from 'vs/workbench/browser/parts/editor/editor';
-import { CloseOneEditorAction } from 'vs/workbench/browser/parts/editor/editorActions';
+import { CloseOneEditorAction, AdhsEditorAction, UnadhsEditorAction } from 'vs/workbench/browser/parts/editor/editorActions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { BreadcrumbsControl } from 'vs/workbench/browser/parts/editor/breadcrumbsControl';
 import { IFileService } from 'vs/platform/files/common/files';
@@ -60,6 +60,8 @@ export class TabsTitleControl extends TitleControl {
 	private tabsScrollbar: ScrollableElement | undefined;
 
 	private closeOneEditorAction: CloseOneEditorAction;
+	private AdhsEditorAction: AdhsEditorAction;
+	private UnadhsEditorAction: UnadhsEditorAction;
 
 	private tabResourceLabels: ResourceLabels;
 	private tabLabels: IEditorInputLabel[] = [];
@@ -92,6 +94,8 @@ export class TabsTitleControl extends TitleControl {
 
 		this.tabResourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, DEFAULT_LABELS_CONTAINER));
 		this.closeOneEditorAction = this._register(this.instantiationService.createInstance(CloseOneEditorAction, CloseOneEditorAction.ID, CloseOneEditorAction.LABEL));
+		this.AdhsEditorAction = this._register(this.instantiationService.createInstance(AdhsEditorAction, AdhsEditorAction.ID, AdhsEditorAction.LABEL));
+		this.UnadhsEditorAction = this._register(this.instantiationService.createInstance(UnadhsEditorAction, UnadhsEditorAction.ID, UnadhsEditorAction.LABEL));
 	}
 
 	protected create(parent: HTMLElement): void {
@@ -506,6 +510,20 @@ export class TabsTitleControl extends TitleControl {
 		addClass(tabCloseContainer, 'tab-close');
 		tabContainer.appendChild(tabCloseContainer);
 
+		// Tab Adhs Button
+		const tabAdhsContainer = document.createElement('div');
+
+		// Tab Unadhs Button
+		const tabUnadhsContainer = document.createElement('div');
+
+		if (index >= this.group.getAdhsdCount()) {
+			addClass(tabAdhsContainer, 'tab-adhs');
+			tabContainer.appendChild(tabAdhsContainer);
+		} else {
+			tabContainer.appendChild(tabUnadhsContainer);
+			addClass(tabUnadhsContainer, 'tab-adhs');
+		}
+
 		// Tab Border Bottom
 		const tabBorderBottomContainer = document.createElement('div');
 		addClass(tabBorderBottomContainer, 'tab-border-bottom-container');
@@ -517,10 +535,22 @@ export class TabsTitleControl extends TitleControl {
 		tabActionBar.push(this.closeOneEditorAction, { icon: true, label: false, keybinding: this.getKeybindingLabel(this.closeOneEditorAction) });
 		tabActionBar.onDidBeforeRun(() => this.blockRevealActiveTabOnce());
 
+		const tabAdhsBar = new ActionBar(tabAdhsContainer, { ariaLabel: localize('araLabelTabActions', "Tab actions"), actionRunner: tabActionRunner });
+		tabAdhsBar.push(this.AdhsEditorAction, { icon: true, label: false, keybinding: this.getKeybindingLabel(this.AdhsEditorAction) });
+		tabAdhsBar.onDidBeforeRun(() => this.blockRevealActiveTabOnce());
+
+		const tabUnadhsBar = new ActionBar(tabUnadhsContainer, { ariaLabel: localize('araLabelTabActions', "Tab actions"), actionRunner: tabActionRunner });
+		tabUnadhsBar.push(this.UnadhsEditorAction, { icon: true, label: false, keybinding: this.getKeybindingLabel(this.UnadhsEditorAction) });
+		tabUnadhsBar.onDidBeforeRun(() => this.blockRevealActiveTabOnce());
+
 		// Eventing
 		const eventsDisposable = this.registerTabListeners(tabContainer, index, tabsContainer, tabsScrollbar);
 
-		this.tabDisposables.push(combinedDisposable(eventsDisposable, tabActionBar, tabActionRunner, editorLabel));
+		if (index >= this.group.getAdhsdCount()) {
+			this.tabDisposables.push(combinedDisposable(eventsDisposable, tabActionBar, tabAdhsBar, tabActionRunner, editorLabel));
+		} else {
+			this.tabDisposables.push(combinedDisposable(eventsDisposable, tabActionBar, tabUnadhsBar, tabActionRunner, editorLabel));
+		}
 
 		return tabContainer;
 	}
@@ -1368,6 +1398,12 @@ registerThemingParticipant((theme: ITheme, collector: ICssStyleCollector) => {
 			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab.active:hover > .tab-close .action-label,
 			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab.dirty > .tab-close .action-label,
 			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container .tab:hover > .tab-close .action-label {
+				opacity: 1 !important;
+			}
+
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active > .tab-adhs .action-label,
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active:hover > .tab-adhs .action-label,
+			.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.dirty > .tab-adhs .action-label {
 				opacity: 1 !important;
 			}
 		`);
