@@ -525,7 +525,7 @@ export class CloseOneEditorAction extends Action {
 export class AdhsEditorAction extends Action {
 
 	static readonly ID = 'workbench.action.AdhsActiveEditor';
-	static readonly LABEL = nls.localize('adhsEditor', "Adhs");
+	static readonly LABEL = nls.localize('adhsEditor', "Pin");
 
 	constructor(
 		id: string,
@@ -571,7 +571,7 @@ export class AdhsEditorAction extends Action {
 export class UnadhsEditorAction extends Action {
 
 	static readonly ID = 'workbench.action.UnadhsActiveEditor';
-	static readonly LABEL = nls.localize('unAdhsEditor', "Unadhs");
+	static readonly LABEL = nls.localize('unAdhsEditor', "Unpin");
 
 	constructor(
 		id: string,

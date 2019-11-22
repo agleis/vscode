@@ -507,24 +507,22 @@ export class TabsTitleControl extends TitleControl {
 		// Tab Editor Label
 		const editorLabel = this.tabResourceLabels.create(tabContainer);
 
-		// Tab Close Button
-		const tabCloseContainer = document.createElement('div');
-		addClass(tabCloseContainer, 'tab-close');
-		tabContainer.appendChild(tabCloseContainer);
-
 		// Tab Adhs Button
 		const tabAdhsContainer = document.createElement('div');
 
 		// Tab Unadhs Button
 		const tabUnadhsContainer = document.createElement('div');
 
-		if (index >= this.group.getAdhsdCount()) {
-			addClass(tabAdhsContainer, 'tab-adhs');
-			tabContainer.appendChild(tabAdhsContainer);
-		} else {
-			tabContainer.appendChild(tabUnadhsContainer);
-			addClass(tabUnadhsContainer, 'tab-adhs');
-		}
+		addClass(tabAdhsContainer, 'tab-adhs');
+		tabContainer.appendChild(tabAdhsContainer);
+		tabContainer.appendChild(tabUnadhsContainer);
+		addClass(tabUnadhsContainer, 'hidden');
+		addClass(tabUnadhsContainer, 'tab-unadhs');
+
+		// Tab Close Button
+		const tabCloseContainer = document.createElement('div');
+		addClass(tabCloseContainer, 'tab-close');
+		tabContainer.appendChild(tabCloseContainer);
 
 		// Tab Border Bottom
 		const tabBorderBottomContainer = document.createElement('div');
@@ -548,11 +546,7 @@ export class TabsTitleControl extends TitleControl {
 		// Eventing
 		const eventsDisposable = this.registerTabListeners(tabContainer, index, tabsContainer, tabsScrollbar);
 
-		if (index >= this.group.getAdhsdCount()) {
-			this.tabDisposables.push(combinedDisposable(eventsDisposable, tabActionBar, tabAdhsBar, tabActionRunner, editorLabel));
-		} else {
-			this.tabDisposables.push(combinedDisposable(eventsDisposable, tabActionBar, tabUnadhsBar, tabActionRunner, editorLabel));
-		}
+		this.tabDisposables.push(combinedDisposable(eventsDisposable, tabActionBar, tabAdhsBar, tabUnadhsBar, tabActionRunner, editorLabel));
 
 		return tabContainer;
 	}
@@ -977,6 +971,19 @@ export class TabsTitleControl extends TitleControl {
 
 		// Settings
 		const options = this.accessor.partOptions;
+
+		if (this.group.isAdhsd(editor)) {
+			const tabAdhs = tabContainer.getElementsByClassName('tab-adhs')[0] as HTMLElement;
+			const tabUnadhs = tabContainer.getElementsByClassName('tab-unadhs')[0] as HTMLElement;
+			addClass(tabAdhs, 'hidden');
+			removeClass(tabUnadhs, 'hidden');
+		}
+		else {
+			const tabAdhs = tabContainer.getElementsByClassName('tab-adhs')[0] as HTMLElement;
+			const tabUnadhs = tabContainer.getElementsByClassName('tab-unadhs')[0] as HTMLElement;
+			removeClass(tabAdhs, 'hidden');
+			addClass(tabUnadhs, 'hidden');
+		}
 
 		['off', 'left', 'right'].forEach(option => {
 			const domAction = options.tabCloseButton === option ? addClass : removeClass;
